@@ -1,0 +1,349 @@
+---
+title: "Untitled"
+author: "Maryna Shedzko"
+date: "2024-12-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(sf)
+library(dplyr)
+library(rnaturalearth)
+```
+
+### Talk Description
+
+Do you have an urge to know where? Discover how to bring your data to life through mapping! This talk introduces the basics of spatial data and how to create stunning maps in R. Using the beloved ggplot2, tmap, and the powerful sf package, we’ll explore visualizing vector and raster data, creating thematic maps, and customizing them. Whether you're new to spatial data or looking to enhance your data visualization skills, this session will guide you through the essentials of mapping in R.
+
+Speaker Maryna Shedzko Maryna is a Research Software Engineer with a background in GIS and Biogeography. During her studies, she specialized in disease distribution, particularly using R for modelling and spatial analysis.
+
+## Introduction
+
+Welcome to the `course_name`!\
+In this course, we will focus on building maps using `ggplot2`, one of R's most popular libraries for data visualization. If you're already familiar with creating graphs using `ggplot`, you'll find making maps a natural extension of those skills.
+
+We will also introduce `sf` (simple features), a package designed to work with spatial data in R. The combination of `ggplot2` and `sf` makes it possible to create beautiful, customizable maps with relatively little effort.
+
+## Basics
+
+Before we talk about mapping, we have to talk about spatial data.
+
+Spatial data refers to information about spatial objects and their relationships. A spatial object is defined as a digital representation of a real or abstract object from the physical or virtual world, including its identifier, coordinates, and attribute data.
+
+Simply put, spatial data consists of information about geographical features or phenomena, capturing their location and/or distribution within a coordinate system tied to the Earth or any other celestial body. What sets spatial data apart from non-spatial data is the use of coordinates to describe location.
+
+### The Vector Model
+
+The vector model describes spatial objects using coordinates and, optionally, the topological relationships between them. Vector data captures the location and shape of objects as geometric primitives such as points, lines, polygons, and volumes. The choice of how to model an object (e.g., whether to represent a city as a point or a polygon) depends on the analysis scale and research objectives. The vector model is object-oriented.
+
+### The Raster Model
+
+The raster model, on the other hand, doesn’t focus on objects but rather on the spatial distribution of a particular characteristic, chosen by the researcher. The space is divided into a regular grid of cells, with each cell recording the value of the studied parameter (through averaging, sampling at the center of each cell, etc.). Raster data can be either quantitative (e.g., a temperature field) or qualitative (e.g., a classified image, where each cell indicates the type of object it belongs to). Thus, the raster model is more focused on the space or phenomenon itself.
+
+While there are other models of spatial data, we won’t be covering them today.
+
+Today, we will focus on how to read and visualize spatial data in both vector and raster formats, and we’ll also discuss issues related to the use of cartographic projections.
+
+### Vector Data
+
+Simple Features (officially known as Simple Features Access) is a standard defined by the Open Geospatial Consortium (OGC) in document OGC 06-103, which is also recognized as the international standard ISO 19125. This standard outlines a common model for storing and accessing vector objects (such as points, lines, polygons, multi-points, multi-lines, etc.) in Geographic Information Systems (GIS).
+
+The Simple Features standard includes 17 types of geometries in total. The most commonly used ones are the following seven:
+
+![Sketches of the main simple feature geometry types](C:/Users/n46797ms/source/repos/R_MapsCourse/Images/simple_features.png)
+
+For geographic coordinates (latitude and longitude), X corresponds to longitude, and Y corresponds to latitude.
+
+#### Formats
+
+Esri Shapefile GeoPackage
+
+Read gpkg file
+
+Traditionally, in all GIS applications and spatial data databases, a large number of spatial objects are represented as an attribute table, where each row corresponds to an object and each column represents an attribute of that object. Each row in the table should be associated with information about the geometry of the object. Depending on the data format, this information can either be stored directly in the table (in a special column) or be placed in a separate data structure, which is linked to the attribute table via a key.
+
+INSERT A SCREENSHOT FROM GIS APPLICATION
+
+In R, the first approach is used by the `sf` package, where geometry information is stored in a special column of the table. Each cell in this column represents a Simple Features geometry object. The geometric objects are represented using standard structures such as lists, matrices, and vectors. These data structures store the coordinates of the objects in an ordered manner and naturally align with the data organization defined by the Simple Features standard. Since the geometry column doesn't store regular variables but rather data structures, it is implemented as a list-column, with each element corresponding to a separate object.
+
+INSERT CODE WITH THE EXAMPLE OF READING
+
+Based on this, spatial objects in R are represented through a hierarchy of three object classes:
+
+-   `sf` (simple features): A data.frame object representing a collection of spatial objects with a list-column to store geometry.
+-   `sfc` (simple features geometry column): The list-column in an sf object that represents a collection of geometries for spatial objects.
+-   `sfg` (simple feature geometry): The geometry of a spatial object within the sfc list. With these specifications in mind, spatial objects are handled accordingly.
+
+The fact that Simple Features objects are implemented as regular data frames means that any operation applicable to a data frame can also be applied to sf objects. This is a crucial feature of sf objects, which was greatly missed in the ecosystem of the older sp package.
+
+INSERT EXAMPLE OF DATAFRAME OPERATION?
+
+> **Note:** It is worth mentioning that the `terra` package also has support for vector data through its `SpatVector` objects. Unlike `sf`, which stores geometry information within a special column in the attribute table, `terra` places geometry information in a separate data structure. This makes it a strong alternative for certain use cases, particularly because `terra` also handles raster datasets.
+
+> However, we are focusing on `sf` in this course because it offers a more data-frame-like approach. This can be more intuitive for GIS users, as it resembles traditional attribute tables, and for non-GIS users already familiar with `data.frame` structures in R. Additionally, `sf` integrates seamlessly with the tidyverse ecosystem, making it easier for those who use `dplyr`, `ggplot2`, and other0 `tidyverse` tools
+
+### Creating Spatial Objects
+
+You can create your own spatial objects using the sf package. Depending on the type of geometry you want to create, the function you use will accept different input formats:
+
+-   Points: Use a coordinate vector.
+-   Multipoints or Linestrings: Use a coordinate matrix.
+-   Other Geometries (e.g., polygons): Use lists of coordinates.
+
+```{r, echo=TRUE}
+# Create a Point (Single coordinate)
+point <- st_sfc(st_point(c(1, 2)))
+```
+
+```{r, echo=TRUE}
+# Create a LineString (Matrix of coordinates)
+ln <- st_sfc(st_linestring(matrix(c(1, 2, 3, 4), ncol = 2)))
+```
+
+```{r, echo=TRUE}
+coords = matrix(c( # Координаты главного полигона
+  0, 0,
+  1, 0,
+  1, 1,
+  0, 1,
+  0, 0
+), ncol = 2, byrow = TRUE)
+
+
+pol = st_polygon(list(coords)) # Простой полигон
+```
+
+### Changing Geometry Types with st_cast
+
+The sf package allows you to convert between different types of geometries using the `st_cast` function. For example, you might want to convert a polygon into a line, or vice versa. Here's how you would do it:
+
+```{r, echo=TRUE}
+# Convert a polygon into a Line
+line_converted <- st_cast(pol, "LINESTRING")
+print(line_converted)
+plot(line_converted)
+```
+
+EXAMPLE
+
+### Polygonizing
+
+You can also polygonize certain geometries, which means converting line data into polygons.
+
+```{r, echo=TRUE}
+# 3. Polygonizing (Creating Polygons from Lines)
+# Assuming we have some lines (e.g., 'line' object), we polygonize it
+polygonized <- st_cast(ln, "POLYGON")
+print(polygonized)
+```
+
+This can be used for example to highlight a specific area on a map. This also means that if you have a table with cordinates you can make a spatial object and put it on a map
+
+EXAMPLE OF POINTS ON THE MAP
+
+Basic Visualization Base R
+
+plot(countries) If you try to "plot" it will try to make thematic maps to the first 9 attributes (what happens if its just a dataframe?)
+
+```{r, echo=TRUE}
+# Get Natural Earth countries data
+countries <- ne_countries(scale = "medium", returnclass = "sf")
+plot(countries)
+```
+
+To plot a specific thematic map, you need to specify the attribute
+
+```{r, echo=TRUE}
+# Get Natural Earth countries data
+plot(countries['name'], key.pos = NULL)
+```
+
+if you want to visualize a specific country for example, because it is a dataframe, you can select UK and plot it on a different map.
+
+```{r, echo=TRUE}
+uk_sf <- countries %>% filter(name == "United Kingdom")
+plot(uk_sf)
+```
+
+Lets select the attribute
+
+```{r, echo=TRUE}
+uk_sf <- countries %>% filter(name == "United Kingdom")
+plot(uk_sf["sovereignt"])
+```
+
+or you can select countries with population more than 1 mil people.
+
+```{r, echo=TRUE}
+# 7. Plotting Countries with Population Greater Than 100 Million
+outlines = st_geometry(countries)
+high_pop_sf <- countries %>% select(pop_est) %>% filter(pop_est > 50000000)
+plot(outlines, col = 'lightgrey')
+plot(high_pop_sf, col = 'blue', add = TRUE)
+
+```
+
+you can customise this by adding graticule, axis
+
+```{r, echo=TRUE}
+
+plot(countries["pop_est"], graticule = TRUE, axes = TRUE)
+
+```
+
+You can add multiple layers
+
+```{r, echo=TRUE}
+# Download Natural Earth data
+countries <- ne_countries(scale = "medium", returnclass = "sf")
+oceans <- ne_download(scale = "medium", type = "ocean", category = "physical", returnclass = "sf")
+cities <- ne_download(scale = "medium", type = "populated_places_simple", returnclass = "sf")
+
+
+# Filter for UK cities and select the top 10 by population
+uk_cities <- cities %>%
+  filter(sov0name == "United Kingdom") %>%
+  arrange(desc(pop_max)) %>%
+  slice_head(n = 4)
+
+# Plot the map
+plot(st_geometry(uk_sf), lwd = 0.5, border = 'gray', main = "United Kingdom with Top 4 Largest Cities")
+plot(st_geometry(oceans), col = 'steelblue1', border = 'steelblue', add = TRUE)
+plot(st_geometry(uk_sf), border = "black", lwd = 1, col = NA, add = TRUE)
+plot(st_geometry(uk_cities), col = 'black', pch = 19, cex = 1, add = TRUE)
+
+# Add city labels
+text(uk_cities$longitude, uk_cities$latitude,
+     labels = uk_cities$name, cex = 0.8, pos = 2, offset = 0.25)
+
+```
+
+you can aggregate objects by atttributes (maybe)
+
+plot()
+
+### geometric attributes (centroid, bounding box)
+
+### raster data
+
+![Raster. Source: National Ecological Observatory Network (NEON)](C:/Users/n46797ms/source/repos/R_MapsCourse/Images/raster_concept.png)
+
+WHAT IS A RASTER?
+
+There are two packages that are widely used to work with raster data: `stars` and `terra`. Terra evolved from `raster` package. which used to be a primary tool for working with raster data. `stars` on the other hand, was developed to support multidimensional data and provide close integration with `sf`.
+
+> **Note:** In this course, we will be using the `stars` package because it is compatible with `sf`, making it easier to work seamlessly with both vector and raster \> data. However, `terra` is a powerful alternative for raster data analysis and is particularly well-suited for large datasets and advanced geospatial operations.
+
+Another package worth mentioning is geodata, which used to be part of the raster package but became its own independent package. This package allows you to easily access various global environmental data, such as climate, elevation, and land cover datasets, and import them directly into R. It provides convenient functions for fetching these datasets without the need to manually download and preprocess them.
+
+Lets import some data:
+
+```{r, echo=TRUE}
+
+geodata_path = "C:/Users/n46797ms/source/repos/R_MapsCourse"
+# wc = getData("alt")
+elevation = elevation_global(res = 5, path = geodata_path)
+elevation
+```
+You may notice that the dataset we just imported is of the SpatRaster class, which is compatible with the `terra` package. Since we won't be using `terra` today, we can easily convert it into a `stars` object. This also demonstrates how simple it is to work with both packages if needed.
+
+```{r, echo=TRUE}
+library(stars)
+elevation_st = st_as_stars(elevation)
+elevation_st
+```
+Lets look at it
+
+```{r, echo=TRUE}
+plot(elevation_st)
+```
+
+VISUALIZATION
+
+```{r, echo=TRUE}
+plot(elevation)
+```
+
+```{r, echo=TRUE}
+elevation
+```
+
+There are difrenet things we can do.
+
+we can select different colors. We can create a custom pallete
+
+```{r, echo=TRUE}
+brks = c(-12000, -5000, -2500, -1000, -200, 0, 200, 500, 1000, 2000, 4000, 8000)
+clrs = c(
+  "steelblue4",
+  "steelblue3",
+  "steelblue2",
+  "steelblue1",
+  "lightskyblue1",
+  "darkseagreen",
+  "lightgoldenrod1",
+  "darkgoldenrod1",
+  "darkorange",
+  "coral2",
+  "firebrick3")
+
+plot(elevation_st, breaks = brks, col = clrs)
+```
+
+
+Or select the existing one 
+
+
+```{r, echo=TRUE}
+plot(elevation_st, col = rainbow(10))
+```
+We can cut it, using a bounding box
+
+
+```{r, echo=TRUE}
+
+
+```
+
+Or using a polygon
+
+```{r, echo=TRUE}
+elev_country = elevation_st[uk_sf]
+elev_country
+plot(elev_country)
+
+```
+
+
+You can add it as a layer to the map that we already made
+
+
+
+```{r, echo=TRUE}
+# Plot the map
+plot(st_geometry(uk_sf), lwd = 0.5, border = 'gray', main = "United Kingdom with Top 4 Largest Cities")
+plot(st_geometry(oceans), col = 'steelblue1', border = 'steelblue', add = TRUE)
+plot(st_geometry(uk_sf), border = "black", lwd = 1, col = NA, add = TRUE)
+plot(st_geometry(uk_cities), col = 'black', pch = 19, cex = 1, add = TRUE)
+plot(elev_country, add = TRUE)
+
+# Add city labels
+text(uk_cities$longitude, uk_cities$latitude,
+     labels = uk_cities$name, cex = 0.8, pos = 2, offset = 0.25)
+
+```
+
+It does look ugly, but this is soe=mething you can do with only base R!
+
+
+
+### How to make pretty maps
+
+
+
+
+
