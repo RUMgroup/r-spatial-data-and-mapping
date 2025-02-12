@@ -80,7 +80,8 @@ to read the data we need to use the function `st_read`
 
 ```{r, echo=FALSE}
 # Read a shapefile
-gpkg_data <- file.path(getwd(), "data", "countries", "countries_geopackage.gpkg")
+gpkg_path <- file.path(getwd(), "data", "countries", "countries_geopackage.gpkg")
+gpkg_data <- st_read(gpkg_path)
 ```
 
 Spatial objects in R are represented through a hierarchy of three object classes:
