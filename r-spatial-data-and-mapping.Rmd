@@ -13,18 +13,30 @@ knitr::opts_chunk$set(echo = TRUE)
 library(sf)
 library(dplyr)
 library(rnaturalearth)
+library(stars)
+library(geodata)
+library(ggplot2)
+library(ggspatial)
 ```
+
+TODO: replace "=" with "<-" 
+TODO: figure out consistent formatting
+TODO: add tmap chapter
+TODO: check references 
+
+
 
 ### Talk Description
 
 Do you have an urge to know where? Discover how to bring your data to life through mapping! This talk introduces the basics of spatial data and how to create stunning maps in R. Using the beloved ggplot2, tmap, and the powerful sf package, we’ll explore visualizing vector and raster data, creating thematic maps, and customizing them. Whether you're new to spatial data or looking to enhance your data visualization skills, this session will guide you through the essentials of mapping in R.
 
-Speaker Maryna Shedzko Maryna is a Research Software Engineer with a background in GIS and Biogeography. During her studies, she specialized in disease distribution, particularly using R for modelling and spatial analysis.
+Speaker: Maryna Shedzko 
+Maryna is a Research Software Engineer with a background in GIS and Biogeography. During her studies, she specialized in disease distribution, particularly using R for modelling and spatial analysis.
 
 ## Introduction
 
-Welcome to the `course_name`!\
-In this course, we will focus on building maps using `ggplot2`, one of R's most popular libraries for data visualization. If you're already familiar with creating graphs using `ggplot`, you'll find making maps a natural extension of those skills.
+Welcome to spatial Data and Mapping in R!
+In this talk, we will focus on building maps using `ggplot2`, one of R's most popular libraries for data visualization. If you're already familiar with creating graphs using `ggplot`, you'll find making maps a natural extension of those skills.
 
 We will also introduce `sf` (simple features), a package designed to work with spatial data in R. The combination of `ggplot2` and `sf` makes it possible to create beautiful, customizable maps with relatively little effort.
 
@@ -60,33 +72,50 @@ For geographic coordinates (latitude and longitude), X corresponds to longitude,
 
 #### Formats
 
-Esri Shapefile GeoPackage
-
-Read gpkg file
-
 Traditionally, in all GIS applications and spatial data databases, a large number of spatial objects are represented as an attribute table, where each row corresponds to an object and each column represents an attribute of that object. Each row in the table should be associated with information about the geometry of the object. Depending on the data format, this information can either be stored directly in the table (in a special column) or be placed in a separate data structure, which is linked to the attribute table via a key.
-
-INSERT A SCREENSHOT FROM GIS APPLICATION
 
 In R, the first approach is used by the `sf` package, where geometry information is stored in a special column of the table. Each cell in this column represents a Simple Features geometry object. The geometric objects are represented using standard structures such as lists, matrices, and vectors. These data structures store the coordinates of the objects in an ordered manner and naturally align with the data organization defined by the Simple Features standard. Since the geometry column doesn't store regular variables but rather data structures, it is implemented as a list-column, with each element corresponding to a separate object.
 
-INSERT CODE WITH THE EXAMPLE OF READING
+to read the data we need to use the function `st_read`
 
-Based on this, spatial objects in R are represented through a hierarchy of three object classes:
+```{r, echo=FALSE}
+# Read a shapefile
+gpkg_data <- file.path(getwd(), "data", "countries", "countries_geopackage.gpkg")
+```
+
+Spatial objects in R are represented through a hierarchy of three object classes:
 
 -   `sf` (simple features): A data.frame object representing a collection of spatial objects with a list-column to store geometry.
 -   `sfc` (simple features geometry column): The list-column in an sf object that represents a collection of geometries for spatial objects.
 -   `sfg` (simple feature geometry): The geometry of a spatial object within the sfc list. With these specifications in mind, spatial objects are handled accordingly.
 
-The fact that Simple Features objects are implemented as regular data frames means that any operation applicable to a data frame can also be applied to sf objects. This is a crucial feature of sf objects, which was greatly missed in the ecosystem of the older sp package.
+The fact that Simple Features objects are implemented as regular data frames means that any operation applicable to a data frame can also be applied to sf objects. This is a crucial feature of sf objects, which was greatly missed in the ecosystem of the older `sp` package.
 
-INSERT EXAMPLE OF DATAFRAME OPERATION?
+Lets have a look at the first five rows of the last 5 columns of the table
+
+```{r, echo=FALSE}
+head(gpkg_data[tail(colnames(gpkg_data))])
+```
+
+The geometry is stored in a special column called `geometry` within the `sf` object. We can extract the geometry from this column using the `st_geometry()` function.
+
+```{r, echo=FALSE}
+# Extract geometry column
+geom_data <- st_geometry(gpkg_data)
+
+# Print the class of the extracted object
+class(geom_data)
+```
+
+The extracted object will have the class `sfc` (Simple Features Geometry Column). This means it is a list of geometries, separate from the attribute data but still linked to the original spatial features.
+
+Using `st_geometry()`, we can manipulate geometries separately from attribute data, allowing for operations such as transformations, projections, and spatial intersections while keeping attributes intact.
 
 > **Note:** It is worth mentioning that the `terra` package also has support for vector data through its `SpatVector` objects. Unlike `sf`, which stores geometry information within a special column in the attribute table, `terra` places geometry information in a separate data structure. This makes it a strong alternative for certain use cases, particularly because `terra` also handles raster datasets.
 
-> However, we are focusing on `sf` in this course because it offers a more data-frame-like approach. This can be more intuitive for GIS users, as it resembles traditional attribute tables, and for non-GIS users already familiar with `data.frame` structures in R. Additionally, `sf` integrates seamlessly with the tidyverse ecosystem, making it easier for those who use `dplyr`, `ggplot2`, and other0 `tidyverse` tools
+> However, we are focusing on `sf` in this talk because it offers a more data-frame-like approach. This can be more intuitive for GIS users, as it resembles traditional attribute tables, and for non-GIS users already familiar with `data.frame` structures in R. Additionally, `sf` integrates seamlessly with the \`tidyverse ecosystem, making it easier for those who use `dplyr`, `ggplot2`, and other `tidyverse` tools
 
-### Creating Spatial Objects
+#### Creating Spatial Objects
 
 You can create your own spatial objects using the sf package. Depending on the type of geometry you want to create, the function you use will accept different input formats:
 
@@ -94,18 +123,18 @@ You can create your own spatial objects using the sf package. Depending on the t
 -   Multipoints or Linestrings: Use a coordinate matrix.
 -   Other Geometries (e.g., polygons): Use lists of coordinates.
 
-```{r, echo=TRUE}
+```{r, echo=FALSE}
 # Create a Point (Single coordinate)
 point <- st_sfc(st_point(c(1, 2)))
 ```
 
-```{r, echo=TRUE}
+```{r, echo=FALSE}
 # Create a LineString (Matrix of coordinates)
 ln <- st_sfc(st_linestring(matrix(c(1, 2, 3, 4), ncol = 2)))
 ```
 
-```{r, echo=TRUE}
-coords = matrix(c( # Координаты главного полигона
+```{r, echo=FALSE}
+coords = matrix(c( 
   0, 0,
   1, 0,
   1, 1,
@@ -114,92 +143,79 @@ coords = matrix(c( # Координаты главного полигона
 ), ncol = 2, byrow = TRUE)
 
 
-pol = st_polygon(list(coords)) # Простой полигон
+pol = st_polygon(list(coords)) # Simple polygon
 ```
 
-### Changing Geometry Types with st_cast
+#### Changing Geometry Types with st_cast
 
 The sf package allows you to convert between different types of geometries using the `st_cast` function. For example, you might want to convert a polygon into a line, or vice versa. Here's how you would do it:
 
-```{r, echo=TRUE}
+```{r, echo=FALSE}
 # Convert a polygon into a Line
 line_converted <- st_cast(pol, "LINESTRING")
 print(line_converted)
 plot(line_converted)
 ```
+Doesn't look any different at first glance, but if we examine, we will notice that this object is now a linestring
 
-EXAMPLE
-
-### Polygonizing
-
-You can also polygonize certain geometries, which means converting line data into polygons.
-
-```{r, echo=TRUE}
-# 3. Polygonizing (Creating Polygons from Lines)
-# Assuming we have some lines (e.g., 'line' object), we polygonize it
-polygonized <- st_cast(ln, "POLYGON")
-print(polygonized)
+```{r, echo=FALSE}
+line_converted
 ```
 
-This can be used for example to highlight a specific area on a map. This also means that if you have a table with cordinates you can make a spatial object and put it on a map
+#### Basic Visualization
 
-EXAMPLE OF POINTS ON THE MAP
+When using the `plot()` function on a spatial object (like an `sf` object), it will generate thematic maps for the first 9 attributes by default. 
 
-Basic Visualization Base R
-
-plot(countries) If you try to "plot" it will try to make thematic maps to the first 9 attributes (what happens if its just a dataframe?)
-
-```{r, echo=TRUE}
+```{r, echo=FALSE}
 # Get Natural Earth countries data
 countries <- ne_countries(scale = "medium", returnclass = "sf")
 plot(countries)
 ```
 
-To plot a specific thematic map, you need to specify the attribute
+To focus on a specific attribute, you can select it explicitly, as shown below:
 
-```{r, echo=TRUE}
+```{r, echo=FALSE}
 # Get Natural Earth countries data
 plot(countries['name'], key.pos = NULL)
 ```
 
-if you want to visualize a specific country for example, because it is a dataframe, you can select UK and plot it on a different map.
+If you want to visualize a specific country, like the United Kingdom, you can filter the data and plot it separately:
 
-```{r, echo=TRUE}
+```{r, echo=FALSE}
 uk_sf <- countries %>% filter(name == "United Kingdom")
 plot(uk_sf)
 ```
 
-Lets select the attribute
+For a more focused plot, select a particular attribute of the UK:
 
-```{r, echo=TRUE}
+```{r, echo=FALSE}
 uk_sf <- countries %>% filter(name == "United Kingdom")
 plot(uk_sf["sovereignt"])
 ```
 
-or you can select countries with population more than 1 mil people.
 
-```{r, echo=TRUE}
-# 7. Plotting Countries with Population Greater Than 100 Million
-outlines = st_geometry(countries)
-high_pop_sf <- countries %>% select(pop_est) %>% filter(pop_est > 50000000)
+You can also filter countries by population. For example, to plot countries with a population greater than 50 million:
+
+```{r, echo=FALSE}
+# Plotting Countries with Population Greater Than 100 Million
+outlines <- st_geometry(countries)
+high_pop_sf <- countries %>% filter(pop_est > 50000000)
 plot(outlines, col = 'lightgrey')
 plot(high_pop_sf, col = 'blue', add = TRUE)
 
 ```
+You can add extra features to your plot, such as a graticule (grid lines) and axes:
 
-you can customise this by adding graticule, axis
-
-```{r, echo=TRUE}
+```{r, echo=FALSE}
 
 plot(countries["pop_est"], graticule = TRUE, axes = TRUE)
 
 ```
 
-You can add multiple layers
+You can combine different layers to enhance your visualization. For example, here’s how to add oceans and populated places to the United Kingdom map:
 
-```{r, echo=TRUE}
-# Download Natural Earth data
-countries <- ne_countries(scale = "medium", returnclass = "sf")
+```{r, echo=FALSE}
+# Download more Natural Earth data
 oceans <- ne_download(scale = "medium", type = "ocean", category = "physical", returnclass = "sf")
 cities <- ne_download(scale = "medium", type = "populated_places_simple", returnclass = "sf")
 
@@ -222,61 +238,32 @@ text(uk_cities$longitude, uk_cities$latitude,
 
 ```
 
-you can aggregate objects by atttributes (maybe)
-
-plot()
-
-### geometric attributes (centroid, bounding box)
-
-### raster data
+### Raster data
 
 ![Raster. Source: National Ecological Observatory Network (NEON)](C:/Users/n46797ms/source/repos/R_MapsCourse/Images/raster_concept.png)
 
 WHAT IS A RASTER?
 
-There are two packages that are widely used to work with raster data: `stars` and `terra`. Terra evolved from `raster` package. which used to be a primary tool for working with raster data. `stars` on the other hand, was developed to support multidimensional data and provide close integration with `sf`.
+There are two packages that are widely used to work with raster data: `stars` and `terra`. Terra evolved from `raster` package, which used to be a primary tool for working with raster data. `stars` on the other hand, was developed to support multidimensional data and provide close integration with `sf`.
 
-> **Note:** In this course, we will be using the `stars` package because it is compatible with `sf`, making it easier to work seamlessly with both vector and raster \> data. However, `terra` is a powerful alternative for raster data analysis and is particularly well-suited for large datasets and advanced geospatial operations.
+> **Note:** In this talk, we will be using the `stars` package because it is compatible with `sf`, making it easier to work seamlessly with both vector and raster data. However, `terra` is a powerful alternative for raster data analysis and is particularly well-suited for large datasets and advanced geospatial operations.
 
-Another package worth mentioning is geodata, which used to be part of the raster package but became its own independent package. This package allows you to easily access various global environmental data, such as climate, elevation, and land cover datasets, and import them directly into R. It provides convenient functions for fetching these datasets without the need to manually download and preprocess them.
+Another package worth mentioning is `geodata`, which used to be part of the raster package but became its own independent package. This package allows you to easily access various global environmental data, such as climate, elevation, and land cover datasets, and import them directly into R. It provides convenient functions for fetching these datasets without the need to manually download and preprocess them.
 
-Lets import some data:
+Let's start by importing some raster data and visualizing it. For this example, we'll use elevation data.
 
-```{r, echo=TRUE}
-
-geodata_path = "C:/Users/n46797ms/source/repos/R_MapsCourse"
-# wc = getData("alt")
-elevation = elevation_global(res = 5, path = geodata_path)
-elevation
-```
-You may notice that the dataset we just imported is of the SpatRaster class, which is compatible with the `terra` package. Since we won't be using `terra` today, we can easily convert it into a `stars` object. This also demonstrates how simple it is to work with both packages if needed.
-
-```{r, echo=TRUE}
-library(stars)
-elevation_st = st_as_stars(elevation)
-elevation_st
-```
-Lets look at it
-
-```{r, echo=TRUE}
+```{r, echo=FALSE}
+elevation_st = read_stars("C:/RIT/RMaps/r-spatial-data-and-mapping/data/elevation/gebco_small.tif")
 plot(elevation_st)
 ```
 
-VISUALIZATION
+This basic plot gives us a look at the elevation data. But we can customize how the data looks by changing color schemes, breaking the values into bins, or cutting out specific areas.
 
-```{r, echo=TRUE}
-plot(elevation)
-```
+#### Customizing the Color Palette
 
-```{r, echo=TRUE}
-elevation
-```
+You can create custom color palettes by defining breakpoints and selecting colors. Here's how we can create a palette for elevation data:
 
-There are difrenet things we can do.
-
-we can select different colors. We can create a custom pallete
-
-```{r, echo=TRUE}
+```{r, echo=FALSE}
 brks = c(-12000, -5000, -2500, -1000, -200, 0, 200, 500, 1000, 2000, 4000, 8000)
 clrs = c(
   "steelblue4",
@@ -294,56 +281,258 @@ clrs = c(
 plot(elevation_st, breaks = brks, col = clrs)
 ```
 
+Alternatively, you can use existing color palettes, like rainbow (there are many to choose from!)
 
-Or select the existing one 
-
-
-```{r, echo=TRUE}
+```{r, echo=FALSE}
 plot(elevation_st, col = rainbow(10))
 ```
-We can cut it, using a bounding box
 
+#### Cropping the Raster
 
-```{r, echo=TRUE}
+Sometimes, you may want to focus on a specific area within your raster data. You can crop the raster using a polygon, such as focusing on a specific country. In this case, we'll focus on Australia, and we'll use the `terrain.colors` palette to visualize the elevation data.
 
+```{r, echo=FALSE}
+# Filter for Australia from the countries dataset
+australia = countries %>% filter(name == "Australia") %>% st_as_sf()
 
+# Crop the elevation data for Australia
+elev_country = elevation_st[australia]
+
+# Plot the cropped elevation data with the terrain.colors palette
+plot(elev_country, col = terrain.colors(6))
 ```
 
-Or using a polygon
+#### Adding Raster Data as a Layer to a Map
 
-```{r, echo=TRUE}
-elev_country = elevation_st[uk_sf]
-elev_country
-plot(elev_country)
+You can also overlay raster data onto vector data in a map. Let's use the map of Australia with top cities, and add the cropped elevation data as a layer.
 
-```
+```{r, echo=FALSE}
+# Filter for Australia and top 5 cities by population
+aus_cities <- cities %>%
+  filter(sov0name == "Australia") %>%
+  arrange(desc(pop_max)) %>%
+  slice_head(n = 5)
 
-
-You can add it as a layer to the map that we already made
-
-
-
-```{r, echo=TRUE}
 # Plot the map
-plot(st_geometry(uk_sf), lwd = 0.5, border = 'gray', main = "United Kingdom with Top 4 Largest Cities")
-plot(st_geometry(oceans), col = 'steelblue1', border = 'steelblue', add = TRUE)
-plot(st_geometry(uk_sf), border = "black", lwd = 1, col = NA, add = TRUE)
-plot(st_geometry(uk_cities), col = 'black', pch = 19, cex = 1, add = TRUE)
-plot(elev_country, add = TRUE)
+plot(australia$geometry, lwd = 0.5, border = 'gray', main = "Australia with Top 5 Largest Cities")  # Custom title
+plot(oceans, col = 'steelblue1', border = 'steelblue', add = TRUE)
+plot(australia$geometry, border = "black", lwd = 1, col = NA, add = TRUE)
+
+# Add the elevation raster data
+plot(elev_country, col = terrain.colors(6), add = TRUE, main = NULL)
+
+# Plot cities
+plot(aus_cities, col = 'black', pch = 19, cex = 1, add = TRUE)
 
 # Add city labels
-text(uk_cities$longitude, uk_cities$latitude,
-     labels = uk_cities$name, cex = 0.8, pos = 2, offset = 0.25)
+text(aus_cities$longitude, aus_cities$latitude,
+     labels = aus_cities$name, cex = 0.8, pos = 2, offset = 0.25)
+
+# Add grid for visual aid
+grid()
 
 ```
 
-It does look ugly, but this is soe=mething you can do with only base R!
-
-
+This creates a map of Australia with top cities overlaid, and it includes the cropped elevation data as an additional layer. It does not look particularly pretty, but this is something you can do in base R!
 
 ### How to make pretty maps
 
+In previous section we explored that capabilities of base R t visualize raster and vector data. In this section we are going to look at ggplot2, as it offers a more flexible and aesthetically pleasing approach.
 
+#### Step 1: Creating a Basic Map
 
+While `ggplot2` syntax can seem a bit more complicated compared to base R plots, it's very similar to creating regular plots. Essentially, ggplot2 allows you to layer different elements onto your plot, making it highly flexible and powerful for both simple and complex visualizations.
 
+When working with maps, we treat the spatial data as a special type of dataset. A key difference with regular graphs is that spatial data usually comes in the form of vector data (like points, lines, or polygons) or raster data (like grids of values). But we use the same ggplot2 syntax for both!
 
+Just like when creating regular graphs, we need to specify the geom to determine how our data will be represented visually.
+
+For example:
+
+-   In regular graphs, when plotting points, we use `geom_point()`.
+-   For spatial data, the equivalent for vector data (like countries or polygons) is `geom_sf()`.
+-   For raster data (like elevation or temperature grids), we use `geom_stars()`. Here’s an example comparing a scatter plot (a regular graph) and a map (spatial data) using ggplot2:
+
+```{r, echo=FALSE}
+# Example of a simple scatter plot
+ggplot(data = mtcars, aes(x = wt, y = mpg)) +  # Dataset and aesthetic mapping
+  geom_point() +  # Plot the points
+  labs(
+    title = "Car Weight vs. Miles Per Gallon",  # Add a title
+    caption = "Data Source: mtcars"  # Add a caption
+  ) +
+  theme_minimal()  # Use the same minimal theme
+  
+```
+
+```{r, echo=FALSE}
+# Load Natural Earth countries dataset
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+# Create a simple map using ggplot
+ggplot(data = world) +
+  geom_sf() +
+  labs(
+    title = "World Map",
+    caption = "Data Source: Natural Earth"
+  ) +
+  theme_minimal()
+```
+
+So, if you've used ggplot2 before, it should be straightforward to apply the same principles to create maps!
+
+### Customizing your map
+
+#### Example: World Map by Population
+
+Just like regular graphs, you can also customize the map in many ways. For instance, in the next example, we’ll color the countries based on their population class.
+
+```{r, echo=FALSE}
+world$pop_class <- cut(world$pop_est, 
+                        breaks = c(0, 1e6, 10e6, 50e6, 200e6, 1e9, Inf), 
+                        labels = c("<1M", "1-10M", "10-50M", "50-200M", "200M-1B", ">1B"),
+                        include.lowest = TRUE)
+
+ggplot(data = world) +
+  geom_sf(aes(fill = pop_class), color = NA) +
+  scale_fill_manual(values = c(
+    "<1M" = "#ffffff",  # White
+    "1-10M" = "#fee5d9",
+    "10-50M" = "#fcae91",
+    "50-200M" = "#fb6a4a",
+    "200M-1B" = "#de2d26",
+    ">1B" = "#a50f15"   # Dark Red
+  )) +
+  labs(
+    title = "World Map by Population",
+    fill = "Population Class",
+    caption = "Data Source: Natural Earth"
+  ) +
+  coord_sf(expand = FALSE) 
+  
+
+```
+
+-   `aes(fill = pop_class)` maps the population class to colors.
+-   `geom_sf()` is still used to plot the geometry (countries), but we added color based on population classes.
+-   `scale_fill_manual()` customizes the color palette for the population categories.
+
+#### Example: Elevation Map
+
+Next, let’s visualize elevation data by creating a map using raster data. In this case, we’ll color the elevation based on binned categories.
+
+```{r, echo=FALSE}
+# Define the breaks and colors
+brks = c(-12000, -5000, -2500, -1000, -200, 0, 200, 500, 1000, 2000, 4000, 8000)
+clrs = c(
+  "steelblue4", "steelblue3", "steelblue2", "steelblue1", "lightskyblue1",
+  "darkseagreen", "lightgoldenrod1", "darkgoldenrod1", "darkorange",
+  "coral2", "firebrick3"
+)
+
+# Cut the elevation data into bins based on the breaks
+elevation_st$elevation_binned <- cut(
+  elevation_st[[1]], 
+  breaks = brks, 
+  include.lowest = TRUE
+)
+
+# Create the plot
+ggplot() +
+  # Elevation raster data
+  geom_stars(data = elevation_st, aes(fill = elevation_binned)) +
+  scale_fill_manual(
+    values = clrs,
+    name = "Elevation (m)",
+    labels = c(
+      " < -5000", 
+      "-5000 - -2500", 
+      "-2500 - -1000", 
+      "-1000-200", 
+      "-200-0", 
+      "0 - 200",
+      "200 - 500",
+      "500-1000",
+      "1000 - 2000",
+      "2000 - 4000",
+      "> 4000"
+      
+    )
+  ) +
+  labs(
+    title = "Elevation Map",
+    caption = "Data Source: Natural Earth"
+  ) +
+  # North arrow at top left
+  coord_sf(expand = FALSE) +  # Keep lat/lon ticks
+  theme_minimal(base_size = 14) +  # Minimal theme with a clean design
+  theme(
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(size = 12, hjust = 0.5),
+    plot.caption = element_text(size = 10, hjust = 1)
+  )
+
+```
+
+-   `geom_stars()` is used to plot raster data (elevation) where the fill color is based on the binned categories of elevation.
+-   `scale_fill_manual()` assigns specific colors to each elevation bin.
+-   `coord_sf(expand = FALSE)` ensures there is no padding around the map, keeping the focus on the data.
+-   Customizing with `theme()` allows you to adjust text sizes, remove axis labels, and improve the overall look.
+
+#### Example: Annual Precipitation Map
+
+Now let’s visualize precipitation data using WorldClim data, which is stored as a raster dataset.
+
+```{r, echo=FALSE}
+geodata_path <- file.path(getwd(), "data")
+# Load the WorldClim precipitation data
+prec = worldclim_global(var = "prec", res = 10, path = geodata_path)
+prec = prec$wc2.1_10m_prec_01 %>% st_as_stars()
+
+# Define breaks for precipitation (in mm) and custom blue color palette
+brks <- c(0, 50, 100, 200, 500, 1000)
+clrs = colorRampPalette(c('white', 'steelblue4'))
+
+# Convert the precipitation data to a factor with levels corresponding to the breaks
+prec_factor <- cut(prec, breaks = brks, include.lowest = TRUE, labels = c("0-50", "50-100", "100-200", "200-500", "500-1000")) %>% st_as_stars()
+
+# Create the plot
+ggplot() +
+  geom_stars(data = prec_factor) +  # Use the factorized data for fill
+  scale_fill_manual(
+    values = clrs(5), 
+    name = "Precipitation (mm)",
+    na.value = "transparent"
+  ) +
+  labs(
+    title = "Annual Precipitation Map",
+    subtitle = "WorldClim Precipitation Data",
+    caption = "Data Source: WorldClim"
+  ) +
+  # Overlay country boundaries
+  geom_sf(data = oceans, fill = "lightblue", color = "steelblue", size = 0.3) +
+  coord_sf(expand = FALSE) +  # Keep lat/lon ticks
+  theme_minimal(base_size = 14) +  # Minimal theme with a clean design
+  theme(
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10),
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(size = 12, hjust = 0.5),
+    plot.caption = element_text(size = 10, hjust = 1),
+    axis.title = element_blank(),
+    axis.text = element_blank()
+  )
+
+```
+
+#### Going Beyond
+
+With these basics, you can start customizing maps further, like adding annotations, legends, north arrows, or even combining multiple spatial layers for more complex visualizations.
+
+You can go completely crazy and create maps like below:
+
+![Map of Switzerland using ggplot2](C:/RIT/RMaps/r-spatial-data-and-mapping/images/crazy_swiss_map_with_crazy_legend.png)
