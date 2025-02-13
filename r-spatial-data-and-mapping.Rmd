@@ -1,12 +1,12 @@
 ---
-title: "Untitled"
+title: "Spatial Data and Mapping in R "
 author: "Maryna Shedzko"
 date: "2024-12-17"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
 
 ```{r}
@@ -78,7 +78,7 @@ In R, the first approach is used by the `sf` package, where geometry information
 
 to read the data we need to use the function `st_read`
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 # Read a shapefile
 gpkg_path <- file.path(getwd(), "data", "countries", "countries_geopackage.gpkg")
 gpkg_data <- st_read(gpkg_path)
@@ -94,13 +94,13 @@ The fact that Simple Features objects are implemented as regular data frames mea
 
 Lets have a look at the first five rows of the last 5 columns of the table
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 head(gpkg_data[tail(colnames(gpkg_data))])
 ```
 
 The geometry is stored in a special column called `geometry` within the `sf` object. We can extract the geometry from this column using the `st_geometry()` function.
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 # Extract geometry column
 geom_data <- st_geometry(gpkg_data)
 
@@ -124,17 +124,17 @@ You can create your own spatial objects using the sf package. Depending on the t
 -   Multipoints or Linestrings: Use a coordinate matrix.
 -   Other Geometries (e.g., polygons): Use lists of coordinates.
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 # Create a Point (Single coordinate)
 point <- st_sfc(st_point(c(1, 2)))
 ```
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 # Create a LineString (Matrix of coordinates)
 ln <- st_sfc(st_linestring(matrix(c(1, 2, 3, 4), ncol = 2)))
 ```
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 coords = matrix(c( 
   0, 0,
   1, 0,
@@ -151,7 +151,7 @@ pol = st_polygon(list(coords)) # Simple polygon
 
 The sf package allows you to convert between different types of geometries using the `st_cast` function. For example, you might want to convert a polygon into a line, or vice versa. Here's how you would do it:
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 # Convert a polygon into a Line
 line_converted <- st_cast(pol, "LINESTRING")
 print(line_converted)
@@ -159,7 +159,7 @@ plot(line_converted)
 ```
 Doesn't look any different at first glance, but if we examine, we will notice that this object is now a linestring
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 line_converted
 ```
 
@@ -167,7 +167,7 @@ line_converted
 
 When using the `plot()` function on a spatial object (like an `sf` object), it will generate thematic maps for the first 9 attributes by default. 
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 # Get Natural Earth countries data
 countries <- ne_countries(scale = "medium", returnclass = "sf")
 plot(countries)
@@ -175,21 +175,21 @@ plot(countries)
 
 To focus on a specific attribute, you can select it explicitly, as shown below:
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 # Get Natural Earth countries data
 plot(countries['name'], key.pos = NULL)
 ```
 
 If you want to visualize a specific country, like the United Kingdom, you can filter the data and plot it separately:
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 uk_sf <- countries %>% filter(name == "United Kingdom")
 plot(uk_sf)
 ```
 
 For a more focused plot, select a particular attribute of the UK:
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 uk_sf <- countries %>% filter(name == "United Kingdom")
 plot(uk_sf["sovereignt"])
 ```
@@ -197,7 +197,7 @@ plot(uk_sf["sovereignt"])
 
 You can also filter countries by population. For example, to plot countries with a population greater than 50 million:
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 # Plotting Countries with Population Greater Than 100 Million
 outlines <- st_geometry(countries)
 high_pop_sf <- countries %>% filter(pop_est > 50000000)
@@ -207,7 +207,7 @@ plot(high_pop_sf, col = 'blue', add = TRUE)
 ```
 You can add extra features to your plot, such as a graticule (grid lines) and axes:
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 
 plot(countries["pop_est"], graticule = TRUE, axes = TRUE)
 
@@ -215,7 +215,7 @@ plot(countries["pop_est"], graticule = TRUE, axes = TRUE)
 
 You can combine different layers to enhance your visualization. For example, here’s how to add oceans and populated places to the United Kingdom map:
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 # Download more Natural Earth data
 oceans <- ne_download(scale = "medium", type = "ocean", category = "physical", returnclass = "sf")
 cities <- ne_download(scale = "medium", type = "populated_places_simple", returnclass = "sf")
@@ -241,9 +241,24 @@ text(uk_cities$longitude, uk_cities$latitude,
 
 ### Raster data
 
+A raster is a type of spatial data that represents information in a grid format, consisting of cells (or pixels), each with a value that represents some measurement or attribute for that location. This grid-based format is commonly used for representing continuous data such as elevation, temperature, land cover, or satellite imagery.
+
 ![Raster. Source: National Ecological Observatory Network (NEON)](C:/Users/n46797ms/source/repos/R_MapsCourse/Images/raster_concept.png)
 
-WHAT IS A RASTER?
+
+Unlike vector data, which requires specifying coordinates for each vertex, the regular grid structure of raster data allows the coordinates of the pixels to be calculated based on their indices. Therefore, raster data is essentially stored as a linearly ordered list of raster values and a description of the raster's geometry.
+
+#### Raster geometry
+
+The geometry of a raster defines the spatial location of its pixels and can be described by the following components:
+| Parameter       | Purpose                                          |
+|-----------------|--------------------------------------------------|
+| NCOLS           | Number of columns                                |
+| NROWS           | Number of rows                                   |
+| XLLCENTER       | Coordinates of the center of the lower-left pixel |
+| YLLCENTER       | Coordinates of the center of the lower-left pixel |
+| CELLSIZE        | Size of each pixel                               |
+
 
 There are two packages that are widely used to work with raster data: `stars` and `terra`. Terra evolved from `raster` package, which used to be a primary tool for working with raster data. `stars` on the other hand, was developed to support multidimensional data and provide close integration with `sf`.
 
@@ -253,7 +268,7 @@ Another package worth mentioning is `geodata`, which used to be part of the rast
 
 Let's start by importing some raster data and visualizing it. For this example, we'll use elevation data.
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 elevation_st = read_stars("C:/RIT/RMaps/r-spatial-data-and-mapping/data/elevation/gebco_small.tif")
 plot(elevation_st)
 ```
@@ -264,7 +279,7 @@ This basic plot gives us a look at the elevation data. But we can customize how 
 
 You can create custom color palettes by defining breakpoints and selecting colors. Here's how we can create a palette for elevation data:
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 brks = c(-12000, -5000, -2500, -1000, -200, 0, 200, 500, 1000, 2000, 4000, 8000)
 clrs = c(
   "steelblue4",
@@ -284,7 +299,7 @@ plot(elevation_st, breaks = brks, col = clrs)
 
 Alternatively, you can use existing color palettes, like rainbow (there are many to choose from!)
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 plot(elevation_st, col = rainbow(10))
 ```
 
@@ -292,7 +307,7 @@ plot(elevation_st, col = rainbow(10))
 
 Sometimes, you may want to focus on a specific area within your raster data. You can crop the raster using a polygon, such as focusing on a specific country. In this case, we'll focus on Australia, and we'll use the `terrain.colors` palette to visualize the elevation data.
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 # Filter for Australia from the countries dataset
 australia = countries %>% filter(name == "Australia") %>% st_as_sf()
 
@@ -307,7 +322,7 @@ plot(elev_country, col = terrain.colors(6))
 
 You can also overlay raster data onto vector data in a map. Let's use the map of Australia with top cities, and add the cropped elevation data as a layer.
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 # Filter for Australia and top 5 cities by population
 aus_cities <- cities %>%
   filter(sov0name == "Australia") %>%
@@ -354,7 +369,7 @@ For example:
 -   For spatial data, the equivalent for vector data (like countries or polygons) is `geom_sf()`.
 -   For raster data (like elevation or temperature grids), we use `geom_stars()`. Here’s an example comparing a scatter plot (a regular graph) and a map (spatial data) using ggplot2:
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 # Example of a simple scatter plot
 ggplot(data = mtcars, aes(x = wt, y = mpg)) +  # Dataset and aesthetic mapping
   geom_point() +  # Plot the points
@@ -366,7 +381,7 @@ ggplot(data = mtcars, aes(x = wt, y = mpg)) +  # Dataset and aesthetic mapping
   
 ```
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 # Load Natural Earth countries dataset
 world <- ne_countries(scale = "medium", returnclass = "sf")
 
@@ -388,7 +403,7 @@ So, if you've used ggplot2 before, it should be straightforward to apply the sam
 
 Just like regular graphs, you can also customize the map in many ways. For instance, in the next example, we’ll color the countries based on their population class.
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 world$pop_class <- cut(world$pop_est, 
                         breaks = c(0, 1e6, 10e6, 50e6, 200e6, 1e9, Inf), 
                         labels = c("<1M", "1-10M", "10-50M", "50-200M", "200M-1B", ">1B"),
@@ -422,7 +437,7 @@ ggplot(data = world) +
 
 Next, let’s visualize elevation data by creating a map using raster data. In this case, we’ll color the elevation based on binned categories.
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 # Define the breaks and colors
 brks = c(-12000, -5000, -2500, -1000, -200, 0, 200, 500, 1000, 2000, 4000, 8000)
 clrs = c(
@@ -488,7 +503,7 @@ ggplot() +
 
 Now let’s visualize precipitation data using WorldClim data, which is stored as a raster dataset.
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 geodata_path <- file.path(getwd(), "data")
 # Load the WorldClim precipitation data
 prec = worldclim_global(var = "prec", res = 10, path = geodata_path)
