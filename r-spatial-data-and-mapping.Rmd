@@ -194,6 +194,11 @@ uk_sf <- countries |> filter(name == "United Kingdom")
 plot(uk_sf)
 ```
 
+::: {style="color: #787474;"}
+> **Note:** In the example above, the base R pipe operator (`|>`) is used to pass the data from one function to the next. It simplifies the workflow by eliminating the need for nested function calls. The expression `countries |> filter(name == "United Kingdom")` filters the dataset for the United Kingdom, and the filtered result is immediately passed to the `plot()` function for visualization.
+
+:::
+
 For a more focused plot, select a particular attribute of the UK:
 
 ```{r, echo=TRUE}
