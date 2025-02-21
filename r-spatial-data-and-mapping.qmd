@@ -67,7 +67,7 @@ Simple Features (officially known as Simple Features Access) is a standard defin
 
 The Simple Features standard includes 17 types of geometries in total. The most commonly used ones are the following seven:
 
-![Sketches of the main simple feature geometry types](C:/Users/n46797ms/source/repos/R_MapsCourse/Images/simple_features.png)
+![Sketches of the main simple feature geometry types](images/simple_features.png)
 
 For geographic coordinates (latitude and longitude), X corresponds to longitude, and Y corresponds to latitude.
 
@@ -196,7 +196,6 @@ plot(uk_sf)
 
 ::: {style="color: #787474;"}
 > **Note:** In the example above, the base R pipe operator (`|>`) is used to pass the data from one function to the next. It simplifies the workflow by eliminating the need for nested function calls. The expression `countries |> filter(name == "United Kingdom")` filters the dataset for the United Kingdom, and the filtered result is immediately passed to the `plot()` function for visualization.
-
 :::
 
 For a more focused plot, select a particular attribute of the UK:
@@ -256,6 +255,7 @@ text(uk_cities$longitude, uk_cities$latitude,
 A raster is a type of spatial data that represents information in a grid format, consisting of cells (or pixels), each with a value that represents some measurement or attribute for that location. This grid-based format is commonly used for representing continuous data such as elevation, temperature, land cover, or satellite imagery.
 
 ![Raster. Source: National Ecological Observatory Network (NEON)](images/raster_concept.png)
+
 
 Unlike vector data, which requires specifying coordinates for each vertex, the regular grid structure of raster data allows the coordinates of the pixels to be calculated based on their indices. Therefore, raster data is essentially stored as a linearly ordered list of raster values and a description of the raster's geometry.
 

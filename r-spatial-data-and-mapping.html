@@ -190,7 +190,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>The Simple Features standard includes 17 types of geometries in total. The most commonly used ones are the following seven:</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="C:/Users/n46797ms/source/repos/R_MapsCourse/Images/simple_features.png" class="img-fluid figure-img"></p>
+<p><img src="images/simple_features.png" class="img-fluid figure-img"></p>
 <figcaption>Sketches of the main simple feature geometry types</figcaption>
 </figure>
 </div>
@@ -422,7 +422,7 @@ Geodetic CRS:  WGS 84
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>oceans <span class="ot">&lt;-</span> <span class="fu">ne_download</span>(<span class="at">scale =</span> <span class="st">"medium"</span>, <span class="at">type =</span> <span class="st">"ocean"</span>, <span class="at">category =</span> <span class="st">"physical"</span>, <span class="at">returnclass =</span> <span class="st">"sf"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Reading layer `ne_50m_ocean' from data source 
-  `C:\Users\n46797ms\AppData\Local\Temp\RtmpohqNt5\ne_50m_ocean.shp' 
+  `C:\Users\n46797ms\AppData\Local\Temp\RtmpysX5Qz\ne_50m_ocean.shp' 
   using driver `ESRI Shapefile'
 Simple feature collection with 1 feature and 3 fields
 Geometry type: MULTIPOLYGON
@@ -433,7 +433,7 @@ Geodetic CRS:  WGS 84</code></pre>
 <div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>cities <span class="ot">&lt;-</span> <span class="fu">ne_download</span>(<span class="at">scale =</span> <span class="st">"medium"</span>, <span class="at">type =</span> <span class="st">"populated_places_simple"</span>, <span class="at">returnclass =</span> <span class="st">"sf"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Reading layer `ne_50m_populated_places_simple' from data source 
-  `C:\Users\n46797ms\AppData\Local\Temp\RtmpohqNt5\ne_50m_populated_places_simple.shp' 
+  `C:\Users\n46797ms\AppData\Local\Temp\RtmpysX5Qz\ne_50m_populated_places_simple.shp' 
   using driver `ESRI Shapefile'
 Simple feature collection with 1251 features and 31 fields
 Geometry type: POINT
@@ -470,7 +470,7 @@ Geodetic CRS:  WGS 84</code></pre>
 <p>A raster is a type of spatial data that represents information in a grid format, consisting of cells (or pixels), each with a value that represents some measurement or attribute for that location. This grid-based format is commonly used for representing continuous data such as elevation, temperature, land cover, or satellite imagery.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="C:/Users/n46797ms/source/repos/R_MapsCourse/Images/raster_concept.png" class="img-fluid figure-img"></p>
+<p><img src="images/raster_concept.png" class="img-fluid figure-img"></p>
 <figcaption>Raster. Source: National Ecological Observatory Network (NEON)</figcaption>
 </figure>
 </div>
@@ -852,7 +852,7 @@ Geodetic CRS:  WGS 84</code></pre>
 <p>You can go completely crazy and create maps like below:</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="C:/RIT/RMaps/r-spatial-data-and-mapping/images/crazy_swiss_map_with_crazy_legend.png" class="img-fluid figure-img"></p>
+<p><img src="images/crazy_swiss_map_with_crazy_legend.png" class="img-fluid figure-img"></p>
 <figcaption>Map of Switzerland using ggplot2</figcaption>
 </figure>
 </div>
